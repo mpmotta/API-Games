@@ -1,5 +1,5 @@
 <?php
 
-header('Location: api.php/games/');
+header('Location: api.php/produtos/');
 
 ?>

@@ -1,9 +1,9 @@
 <?php
-$host = 'game-api.c4oue7g4ijee.us-east-1.rds.amazonaws.com'; 
+$host = 'localhost'; 
 $port = 3306; // porta padrão MySQL
-$db   = 'jogos'; // nome 
-$user = 'admin'; // usuário 
-$pass = 'Anima#SD2025'; // senha 
+$db   = 'loja'; // nome 
+$user = 'root'; // usuário 
+$pass = 'usbw'; // senha 
 $charset = 'utf8';
 
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";

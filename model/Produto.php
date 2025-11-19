@@ -1,22 +1,30 @@
 <?php
 require_once __DIR__ . '/../config.php';
 
-class Game {
+class Produto {
     private $pdo;
-    private $tabela = 'games';
+    private $tabela = 'produtos';
 
+    // Propriedades
+    private $id;
+    private $nome;
+    private $marca;
+    private $categoria;
+    private $descricao;
+    private $valor;
+    private $disponibilidade;
+    
     public function __construct() {
         global $pdo;
         $this->pdo = $pdo;
     }
-
+    
     public function consulta() {
         $sql = "SELECT * FROM $this->tabela";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
-
     public function consultaID($id) {
         $sql = "SELECT * FROM $this->tabela WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
@@ -25,28 +33,46 @@ class Game {
         return $stmt->fetch();
     }
 
-    public function inserir(Game $game) {
-        $sql = "INSERT INTO $this->tabela (nome, estudio, categoria, idade, valor, disponibilidade)
-                VALUES (:nome, :estudio, :categoria, :idade, :valor, :disponibilidade)";
+    // Inserir (sem imagem)
+    public function inserir(Produto $produto) {
+        $sql = "INSERT INTO $this->tabela (nome, marca, categoria, descricao, valor, disponibilidade, imagem)
+                VALUES (:nome, :marca, :categoria, :descricao, :valor, :disponibilidade, 'no-image.jpg')";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':nome', $game->getNome(), PDO::PARAM_STR);
-        $stmt->bindParam(':estudio', $game->getEstudio(), PDO::PARAM_STR);
-        $stmt->bindParam(':categoria', $game->getCategoria(), PDO::PARAM_STR);
-        $stmt->bindParam(':idade', $game->getIdade(), PDO::PARAM_STR);
-        $stmt->bindParam(':valor', $game->getValor());
-        $stmt->bindParam(':disponibilidade', $game->getDisponibilidade(), PDO::PARAM_BOOL);
+        $stmt->bindParam(':nome', $produto->getNome(), PDO::PARAM_STR);
+        $stmt->bindParam(':marca', $produto->getMarca(), PDO::PARAM_STR);
+        $stmt->bindParam(':categoria', $produto->getCategoria(), PDO::PARAM_STR);
+        $stmt->bindParam(':descricao', $produto->getDescricao(), PDO::PARAM_STR);
+        $stmt->bindParam(':valor', $produto->getValor());
+        $stmt->bindParam(':disponibilidade', $produto->getDisponibilidade(), PDO::PARAM_BOOL);
         return $stmt->execute();
     }
 
-    public function editar(Game $game, $id) {
-        $sql = "UPDATE $this->tabela SET nome = :nome, estudio = :estudio, categoria = :categoria, idade = :idade, valor = :valor, disponibilidade = :disponibilidade WHERE id = :id";
+    // Editar (só dados, sem imagem)
+    public function editar(produto $produto, $id) {
+        $sql = "UPDATE $this->tabela SET 
+                    nome = :nome, 
+                    marca = :marca, 
+                    categoria = :categoria, 
+                    descricao = :descricao, 
+                    valor = :valor, 
+                    disponibilidade = :disponibilidade
+                WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':nome', $game->getNome(), PDO::PARAM_STR);
-        $stmt->bindParam(':estudio', $game->getEstudio(), PDO::PARAM_STR);
-        $stmt->bindParam(':categoria', $game->getCategoria(), PDO::PARAM_STR);
-        $stmt->bindParam(':idade', $game->getIdade(), PDO::PARAM_STR);
-        $stmt->bindParam(':valor', $game->getValor());
-        $stmt->bindParam(':disponibilidade', $game->getDisponibilidade(), PDO::PARAM_BOOL);
+        $stmt->bindParam(':nome', $produto->getNome(), PDO::PARAM_STR);
+        $stmt->bindParam(':marca', $produto->getMarca(), PDO::PARAM_STR);
+        $stmt->bindParam(':categoria', $produto->getCategoria(), PDO::PARAM_STR);
+        $stmt->bindParam(':descricao', $produto->getDescricao(), PDO::PARAM_STR);
+        $stmt->bindParam(':valor', $produto->getValor());
+        $stmt->bindParam(':disponibilidade', $produto->getDisponibilidade(), PDO::PARAM_BOOL);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+    
+    // Atualizar (só imagem)
+    public function atualizarImagem($id, $nomeImagem) {
+        $sql = "UPDATE $this->tabela SET imagem = :imagem WHERE id = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindParam(':imagem', $nomeImagem, PDO::PARAM_STR);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
@@ -57,7 +83,9 @@ class Game {
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
-
+    
+    // --- Métodos de Filtro Completos ---
+    
     public function consultaPorCategoria($categoria) {
         $sql = "SELECT * FROM $this->tabela WHERE categoria = :categoria";
         $stmt = $this->pdo->prepare($sql);
@@ -67,27 +95,17 @@ class Game {
     }
 
     public function consultaPorNome($nome) {
-        $like = "%$nome%";
         $sql = "SELECT * FROM $this->tabela WHERE nome LIKE :nome";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':nome', $like, PDO::PARAM_STR);
+        $stmt->bindValue(':nome', '%' . $nome . '%', PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function consultaPorEstudio($estudio) {
-        $like = "%$estudio%";
-        $sql = "SELECT * FROM $this->tabela WHERE estudio LIKE :estudio";
+    public function consultaPorMarca($marca) {
+        $sql = "SELECT * FROM $this->tabela WHERE marca = :marca";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':estudio', $like, PDO::PARAM_STR);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    public function consultaPorIdade($idade) {
-        $sql = "SELECT * FROM $this->tabela WHERE idade = :idade";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':idade', $idade, PDO::PARAM_STR);
+        $stmt->bindParam(':marca', $marca, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -117,35 +135,30 @@ class Game {
         return $stmt->fetchAll();
     }
 
-    public function consultaPorDisponibilidade($disponibilidade) {
-        $sql = "SELECT * FROM $this->tabela WHERE disponibilidade = :disponibilidade";
+    public function consultaPorDisponibilidade($disp) {
+        $sql = "SELECT * FROM $this->tabela WHERE disponibilidade = :disp";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':disponibilidade', $disponibilidade, PDO::PARAM_BOOL);
+        $stmt->bindParam(':disp', $disp, PDO::PARAM_BOOL);
         $stmt->execute();
         return $stmt->fetchAll();
     }
+    
+    // --- Fim dos Filtros ---
+
 
     // Getters e setters
-    private $id;
-    private $nome;
-    private $estudio;
-    private $categoria;
-    private $idade;
-    private $valor;
-    private $disponibilidade;
-
     public function getId() { return $this->id; }
     public function setId($id) { $this->id = $id; }
     public function getNome() { return $this->nome; }
     public function setNome($nome) { $this->nome = $nome; }
-    public function getEstudio() { return $this->estudio; }
-    public function setEstudio($estudio) { $this->estudio = $estudio; }
+    public function getMarca() { return $this->marca; }
+    public function setMarca($marca) { $this->marca = $marca; }
     public function getCategoria() { return $this->categoria; }
     public function setCategoria($categoria) { $this->categoria = $categoria; }
-    public function getIdade() { return $this->idade; }
-    public function setIdade($idade) { $this->idade = $idade; }
+    public function getDescricao() { return $this->descricao; }
+    public function setDescricao($descricao) { $this->descricao = $descricao; }
     public function getValor() { return $this->valor; }
-    public function setValor($valor) { $this->valor = $valor; }
+    public function setValor($valor) { return $this->valor = $valor; }
     public function getDisponibilidade() { return $this->disponibilidade; }
     public function setDisponibilidade($disponibilidade) { $this->disponibilidade = $disponibilidade; }
 }

@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/controller/GameController.php';
-
+require_once __DIR__ . '/controller/produtoController.php';
 
 header('Content-Type: application/json');
 
@@ -8,44 +7,48 @@ header('Content-Type: application/json');
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = array_values(array_filter(explode('/', trim($uri, '/'))));
 
-// Remove prefixos do caminho, se existirem
-if (isset($path[0]) && $path[0] === 'API-Games') array_shift($path);
+// Remove prefixos do caminho, se existirem (ajuste conforme sua pasta local)
+if (isset($path[0]) && $path[0] === 'API-Loja') array_shift($path);
 if (isset($path[0]) && $path[0] === 'api.php') array_shift($path);
 
 $method = $_SERVER['REQUEST_METHOD'];
-$controller = new GameController();
+$controller = new produtoController();
 
-// Define as rotas (método, padrão, método do controller, quantos parâmetros)
+// Define as rotas
 $routes = [
-    ['GET',    ['games'],                               'index',                     0],
-    ['GET',    ['games', '{id}'],                       'show',                      1],
-    ['POST',   ['games'],                               'store',                     0],
-    ['PUT',    ['games', '{id}'],                       'update',                    1],
-    ['DELETE', ['games', '{id}'],                       'destroy',                   1],
-    ['GET',    ['games', 'categoria', '{categoria}'],   'filterByCategoria',         1],
-    ['GET',    ['games', 'nome', '{nome}'],             'filterByNome',              1],
-    ['GET',    ['games', 'estudio', '{estudio}'],       'filterByEstudio',           1],
-    ['GET',    ['games', 'idade', '{idade}'],           'filterByIdade',             1],
-    ['GET',    ['games', 'valorMenor', '{valor}'],      'filterByValorMenor',        1],
-    ['GET',    ['games', 'valorMaior', '{valor}'],      'filterByValorMaior',        1],
-    ['GET',    ['games', 'valorEntre', '{min}', '{max}'],'filterByValorEntre',        2],
-    ['GET',    ['games', 'disponibilidade', '{disp}'],  'filterByDisponibilidade',   1],
-    // Adicione outras rotas se necessário
+    ['GET',    ['produtos'],                             'index',                   0],
+    ['GET',    ['produtos', '{id}'],                     'show',                    1],
+    ['POST',   ['produtos'],                             'store',                   0],
+    ['PUT',    ['produtos', '{id}'],                     'update',                  1],
+    ['DELETE', ['produtos', '{id}'],                     'destroy',                 1],
+    ['GET',    ['produtos', 'categoria', '{categoria}'], 'filterByCategoria',       1],
+    ['GET',    ['produtos', 'nome', '{nome}'],           'filterByNome',            1],
+    ['GET',    ['produtos', 'marca', '{marca}'],         'filterByMarca',           1],
+    ['GET',    ['produtos', 'valorMenor', '{valor}'],    'filterByValorMenor',      1],
+    ['GET',    ['produtos', 'valorMaior', '{valor}'],    'filterByValorMaior',      1],
+    ['GET',    ['produtos', 'valorEntre', '{min}', '{max}'], 'filterByValorEntre',  2],
+    ['GET',    ['produtos', 'disponibilidade', '{disp}'], 'filterByDisponibilidade', 1],
 ];
 
+// --- AQUI ESTAVA O PROBLEMA ---
 // Função para casar rota e extrair parâmetros
 function matchRoute($routePattern, $path) {
     if (count($routePattern) !== count($path)) return false;
     $params = [];
     foreach ($routePattern as $i => $segment) {
         if (preg_match('/^{.+}$/', $segment)) {
-            $params[] = $path[$i];
+            // ADICIONADO: urldecode() para transformar "Eletr%C3%B4nicos" em "Eletrônicos"
+            $params[] = urldecode($path[$i]); 
         } elseif ($segment !== $path[$i]) {
-            return false;
+            // Aqui também usamos urldecode para comparar caso o segmento fixo da URL venha codificado
+            if ($segment !== urldecode($path[$i])) {
+                 return false;
+            }
         }
     }
     return $params;
 }
+// ------------------------------
 
 // Busca e executa a rota correspondente
 $found = false;
@@ -64,6 +67,7 @@ foreach ($routes as $route) {
                 $result = $controller->$controllerMethod($params[0], $data);
                 echo json_encode(['success' => true, 'result' => $result]);
             } else {
+                // Passa os parâmetros decodificados para o controller
                 $result = call_user_func_array([$controller, $controllerMethod], $params);
                 echo json_encode($result);
             }
@@ -73,7 +77,7 @@ foreach ($routes as $route) {
     }
 }
 
-// Exemplo de rota pública para login (se quiser JWT)
+// Exemplo de rota pública para login
 if (!$found && $path && $path[0] === 'login' && $method === 'POST') {
     require_once 'vendor/autoload.php';
     $data = json_decode(file_get_contents('php://input'), true);
@@ -98,3 +102,4 @@ if (!$found) {
     http_response_code(404);
     echo json_encode(['error' => 'Rota não encontrada']);
 }
+?>
